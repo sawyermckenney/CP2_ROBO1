@@ -1,0 +1,73 @@
+<?xml version="1.0"?>
+<robot name="arena_walls">
+
+  <link name="arena_base">
+
+    <!-- Bottom wall (from 0,0 to 6,0) -->
+    <visual>
+      <geometry>
+        <box size="6 0.1 1"/>
+      </geometry>
+      <origin xyz="3 0 0.5" rpy="0 0 0"/>
+      <material name="gray">
+        <color rgba="0.5 0.5 0.5 1"/>
+      </material>
+    </visual>
+    <collision>
+      <geometry>
+        <box size="6 0.1 1"/>
+      </geometry>
+      <origin xyz="3 0 0.5" rpy="0 0 0"/>
+    </collision>
+
+    <!-- Top wall (from 0,6 to 6,6) -->
+    <visual>
+      <geometry>
+        <box size="6 0.1 1"/>
+      </geometry>
+      <origin xyz="3 6 0.5" rpy="0 0 0"/>
+    </visual>
+    <collision>
+      <geometry>
+        <box size="6 0.1 1"/>
+      </geometry>
+      <origin xyz="3 6 0.5" rpy="0 0 0"/>
+    </collision>
+
+    <!-- Left wall (from 0,0 to 0,6) -->
+    <visual>
+      <geometry>
+        <box size="0.1 6 1"/>
+      </geometry>
+      <origin xyz="0 3 0.5" rpy="0 0 0"/>
+    </visual>
+    <collision>
+      <geometry>
+        <box size="0.1 6 1"/>
+      </geometry>
+      <origin xyz="0 3 0.5" rpy="0 0 0"/>
+    </collision>
+
+    <!-- Right wall (from 6,0 to 6,6) -->
+    <visual>
+      <geometry>
+        <box size="0.1 6 1"/>
+      </geometry>
+      <origin xyz="6 3 0.5" rpy="0 0 0"/>
+    </visual>
+    <collision>
+      <geometry>
+        <box size="0.1 6 1"/>
+      </geometry>
+      <origin xyz="6 3 0.5" rpy="0 0 0"/>
+    </collision>
+
+    <!-- Make the base static -->
+    <inertial>
+      <mass value="0"/>
+      <inertia ixx="0.01" ixy="0" ixz="0" iyy="0.01" iyz="0" izz="0.01"/>
+    </inertial>
+
+  </link>
+
+</robot>
