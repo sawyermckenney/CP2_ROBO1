@@ -171,6 +171,17 @@ class Turtlebot():
 
 
 ### MAIN - implement your solution here! ###
+class RobotPosition:
+    def __init__(self, position, orientation):
+        self.position = position
+        self.orientation = orientation
+    
+    def get_position(self):
+        return self.position
+    def get_orientation(self):
+        return self.orientation
+
+
 
 if __name__ == "__main__":
     goal = GOAL
@@ -178,7 +189,12 @@ if __name__ == "__main__":
     turtleId, obstacles = setup_pybullet(goal)
     # Setup turtlebot
     turtlebot = Turtlebot(turtleId, obstacles)
-
+    # Let's start by getting the position of the turtlebot
+    start_postion = turtlebot.get_position()
+    srart_orientation = turtlebot.get_orientation()
+    robot_state=RobotPosition(start_postion, srart_orientation)
+    print("initial position: ", robot_state.get_position())
+    print("initial orientation: ", robot_state.get_orientation())
     print('starting at {}'.format(turtlebot.get_position()))
     # Turn off real-time simulation for manual step control
     p.setRealTimeSimulation(0)
@@ -193,7 +209,7 @@ if __name__ == "__main__":
         # Some example code below to get familiar with the simulation loop
 
         # set turtlebot to move forward
-        turtlebot.set_velocities(leftWheelVelocity=10, rightWheelVelocity=10)
+        #turtlebot.set_velocities(leftWheelVelocity=10, rightWheelVelocity=10)
 
         # IMPORTANT - You need to run this command for every step in simulation
         # Example: if you comment this out your turtlebot will not move despite setting the wheel velocities
