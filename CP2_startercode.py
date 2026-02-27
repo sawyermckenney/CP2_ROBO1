@@ -202,6 +202,8 @@ if __name__ == "__main__":
     # Start recording video 
     log_id = p.startStateLogging(p.STATE_LOGGING_VIDEO_MP4, "./search.mp4")
     
+    steps_per_sec = 240 #guessing based on google search - will test this
+    steps_left = steps_per_sec #start at 240, do one second of movement
     while p.isConnected():
 
         # Implement your solution in this loop
@@ -209,11 +211,21 @@ if __name__ == "__main__":
         # Some example code below to get familiar with the simulation loop
 
         # set turtlebot to move forward
-        #turtlebot.set_velocities(leftWheelVelocity=10, rightWheelVelocity=10)
-
+        turtlebot.set_velocities(leftWheelVelocity=10, rightWheelVelocity=10)
         # IMPORTANT - You need to run this command for every step in simulation
         # Example: if you comment this out your turtlebot will not move despite setting the wheel velocities
-        p.stepSimulation() 
+        # if steps_left > 0:
+        #     p.stepSimulation() 
+        #     steps_left -= 1
+        #     if turtlebot.collision_check():
+        #         turtlebot.set_velocities(0,0)
+        #         steps_left = 0
+        #         print("Collision detected")
+        # else:
+        #     turtlebot.set_velocities(0,0)
+        #     steps_left = 0
+        #     p.stepSimulation()
+        p.stepSimulation()
 
 
         # Command to stop recording
