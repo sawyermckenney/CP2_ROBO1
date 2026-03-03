@@ -20,6 +20,28 @@ WHEEL_MAX =  12.0
 ARENA_XMIN, ARENA_XMAX = 0.0, 6.0
 ARENA_YMIN, ARENA_YMAX = 0.0, 6.0
 
+"""
+Assumptions I am making about the Tree API:
+
+#initialize tree (empty constructor)
+Tree()
+
+#add root node (pos=[x,y,z], orn=[x,y,z,w], parent=None, action=None, steps=None) -> returns node_id (int)
+tree.add_node(bot.get_position(), bot.get_orientation(), parent=None, action=None, steps=None)
+
+#return node_id (int) of node closest to sample=(x,y)
+tree.nearest(sample)
+
+#get node object from node_id (int) -> node has fields .pos ([x,y,z]) and .orn ([x,y,z,w])
+tree.get_node(node_id)
+
+#given node_id (int), return path from root->node_id as list of (pos, orn) tuples
+tree.backtrack_path(node_id)
+
+#add child node (end_pos=[x,y,z], end_orn=[x,y,z,w], parent=closest_id (int), action=(lw,rw), steps=int) -> returns node_id (int)
+tree.add_node(end_pos, end_orn, parent=closest_id, action=action, steps=steps)
+"""
+
 #helper function, takes in the bot, returns a list of poses to go from start->goal
 def get_rrt_path(bot: Turtlebot):
     tree = Tree()
