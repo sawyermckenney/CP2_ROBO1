@@ -1,24 +1,26 @@
+# from simulated_rrt_tree import *
 from rrt_tree import *
 from CP2_startercode import *
 import pybullet as p
 import math
 import random
 
-MAX_ITERS = 20 #number of tries for each 
+MAX_ITERS = 50 #number of tries for each 
 GOAL_BIAS = 0.5 #50%
+RRT_CAP = 3000 #maximum number of montecarlo runs
 
 #action duration bounds - tune as needed. 240 samples/sec
-STEP_MIN = 24 
+STEP_MIN = 5 
 STEP_MAX = 120 
 
 #TODO: Should we allow negatives?
-WHEEL_MIN = 0.0
+WHEEL_MIN = -3.0
 WHEEL_MAX =  12.0
 
 
 #TODO: Figure out where these values are stored so we can retrieve them
-ARENA_XMIN, ARENA_XMAX = 0.0, 6.0
-ARENA_YMIN, ARENA_YMAX = 0.0, 6.0
+# ARENA_XMIN, ARENA_XMAX = 0.0, 6.0
+# ARENA_YMIN, ARENA_YMAX = 0.0, 6.0
 
 """
 Assumptions I am making about the Tree API:
@@ -43,12 +45,12 @@ tree.add_node(end_pos, end_orn, parent=closest_id, action=action, steps=steps)
 """
 
 #helper function, takes in the bot, returns a list of poses to go from start->goal
-def get_rrt_path(bot: Turtlebot):
-    tree = Tree()
+def get_rrt_path(bot: Turtlebot, tree: Tree, arena):
+    ARENA_XMIN, ARENA_XMAX, ARENA_YMIN, ARENA_YMAX = arena
     root_id = tree.add_node(bot.get_position(), bot.get_orientation(),
                             parent=None, action=None, steps=None) #initialize tree root as bot's position at start - need to update action after first sim run
 
-    for _ in range(3000):  # overall RRT iterations cap 
+    for _ in range(RRT_CAP):  # overall RRT iterations cap 
         # sample node  generation
         if random.random() < GOAL_BIAS:
             sample = (GOAL[0], GOAL[1])
@@ -62,7 +64,8 @@ def get_rrt_path(bot: Turtlebot):
 
         new_pos = tree.get_node(new_id).pos   
         if math.dist((new_pos[0], new_pos[1]), (GOAL[0], GOAL[1])) <= GOAL_RADIUS:
-            return tree.backtrack_path(new_id) 
+            # return tree.backtrack_path(new_id) 
+            return new_id
 
     return None
         
@@ -70,6 +73,7 @@ def get_rrt_path(bot: Turtlebot):
 #gets ONE path
 def do_rollout(bot: Turtlebot, start_pos, start_orn, action, steps):
     bot.teleport(start_pos, start_orn)
+    p.stepSimulation()
 
     lw, rw = action
     bot.set_velocities(lw, rw)
@@ -115,6 +119,9 @@ def monte_iter(bot:Turtlebot, tree:Tree, sample):
 
     # add to tree
     new_id = tree.add_node(end_pos, end_orn, parent=closest_id, action=action, steps=steps)
+    end_pos, end_orn, action, steps = best
+    bot.teleport(end_pos, end_orn)
+    p.stepSimulation()
     return new_id
 
 
