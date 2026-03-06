@@ -14,7 +14,7 @@ GOAL_RADIUS = 0.3
 START_POS = [1.5, 1.5, 0]
 BLOCKS = [[1.5, 2.5], [4, 2], [3,5]]
 
-
+    
 ### PYBULLET SETUP ###
 
 def setup_pybullet(goal):
@@ -31,6 +31,12 @@ def setup_pybullet(goal):
     turtleId = p.loadURDF("turtlebot.urdf", startPos, globalScaling=2)
     sphereId = p.loadURDF("sphere.urdf", [goal[0], goal[1], 0.01], globalScaling=0.25)
     wallId = p.loadURDF("arena_walls6.urdf") 
+    wall_aabb_min, wall_aabb_max = p.getAABB(wallId)
+    margin = 0.35  # tuned value - seems to work ok
+    ARENA_XMIN = wall_aabb_min[0] + margin
+    ARENA_XMAX = wall_aabb_max[0] - margin
+    ARENA_YMIN = wall_aabb_min[1] + margin
+    ARENA_YMAX = wall_aabb_max[1] - margin
     obstacles = [wallId]
     blocks = BLOCKS
 
@@ -41,7 +47,7 @@ def setup_pybullet(goal):
     # set camera to bird eye view
     # note: can't set camera pitch to 90 exact -> gimble lock
     p.resetDebugVisualizerCamera(cameraDistance=10, cameraYaw=0, cameraPitch=-89.99, cameraTargetPosition=[4, 4, 0])
-    return turtleId, obstacles
+    return turtleId, obstacles, (ARENA_XMIN, ARENA_XMAX, ARENA_YMIN, ARENA_YMAX)
 
 ### TURTLEBOT SETUP ##
 
@@ -81,10 +87,10 @@ class Turtlebot():
         """
         collision_check = False
         for obstacle in self.obstacles: # check walls and blocks
-            contacts = p.getContactPoints(bodyA=turtlebot.turtleId, bodyB=obstacle)
+            contacts = p.getContactPoints(bodyA=self.turtleId, bodyB=obstacle)
             if contacts:
                 collision_check = True
-                print(f"Collision detected at pose: {turtlebot.get_position()}")
+                print(f"Collision detected at pose: {self.get_position()}")
                 break
         return collision_check
         
@@ -181,12 +187,27 @@ class RobotPosition:
     def get_orientation(self):
         return self.orientation
 
-
+#replays the path - not trace like backtrack_path, but actually moves the bot along the "final" path
+def replay_path(bot: Turtlebot, action_path):
+    for (action, steps) in action_path:
+        lw, rw = action
+        bot.set_velocities(lw, rw)
+        for _ in range(steps):
+            p.stepSimulation()
+            if bot.collision_check():
+                bot.set_velocities(0, 0)
+                return False
+        bot.set_velocities(0, 0)
+    return True
 
 if __name__ == "__main__":
+    from rrt_path import get_rrt_path
+    from rrt_tree import *
+    tree = Tree()
     goal = GOAL
     # Setup pybullet
-    turtleId, obstacles = setup_pybullet(goal)
+    turtleId, obstacles, arena = setup_pybullet(goal)
+    
     # Setup turtlebot
     turtlebot = Turtlebot(turtleId, obstacles)
     # Let's start by getting the position of the turtlebot
@@ -202,29 +223,43 @@ if __name__ == "__main__":
     # Start recording video 
     log_id = p.startStateLogging(p.STATE_LOGGING_VIDEO_MP4, "./search.mp4")
     
+    ran = False
+    path = None
     while p.isConnected():
 
         # Implement your solution in this loop
-        
+        if not ran:
+            goal_node = get_rrt_path(turtlebot, tree, arena)
+            ran = True        
+            
+            if goal_node is None:
+                print("RRT failed (path is None)")
+            else:
+                path = tree.backtrack_path(goal_node)
+                print(f"RRT returned path with {len(path)} nodes")
+                # path is [(pos, orn), ...] from tree.backtrack_path()
+                pts = [list(pos) for (pos, orn) in path]
+                turtlebot.plot_path("green", pts)
+                
+                action_path = tree.get_action_path(goal_node)
+                turtlebot.set_velocities(0, 0)
+                turtlebot.teleport(START_POS, [0, 0, 0, 1])  # identity quaternion
+                p.stepSimulation()
+                turtlebot.set_velocities(0, 0)
+                                
+                replay = replay_path(turtlebot, action_path)
+            p.stopStateLogging(log_id)
+            # p.stepSimulation()
         # Some example code below to get familiar with the simulation loop
 
         # set turtlebot to move forward
-        #turtlebot.set_velocities(leftWheelVelocity=10, rightWheelVelocity=10)
-
+        # turtlebot.set_velocities(leftWheelVelocity=10, rightWheelVelocity=10)
         # IMPORTANT - You need to run this command for every step in simulation
-        # Example: if you comment this out your turtlebot will not move despite setting the wheel velocities
-        p.stepSimulation() 
+
+        p.stepSimulation()
 
 
         # Command to stop recording
-        p.stopStateLogging(log_id)
-
-        
-
-        
-
-        
-
-
+        # p.stopStateLogging(log_id)
 
     p.disconnect()
