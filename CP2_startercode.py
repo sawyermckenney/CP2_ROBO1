@@ -221,7 +221,7 @@ if __name__ == "__main__":
     p.setRealTimeSimulation(0)
 
     # Start recording video 
-    log_id = p.startStateLogging(p.STATE_LOGGING_VIDEO_MP4, "./search.mp4")
+    #log_id = p.startStateLogging(p.STATE_LOGGING_VIDEO_MP4, "./search.mp4")
     
     ran = False
     path = None
@@ -230,7 +230,11 @@ if __name__ == "__main__":
         # Implement your solution in this loop
         if not ran:
             goal_node = get_rrt_path(turtlebot, tree, arena)
-            ran = True        
+            ran = True       
+
+            for node in tree.nodes:
+                if node.trajectory:
+                    turtlebot.plot_path("red", node.trajectory) 
             
             if goal_node is None:
                 print("RRT failed (path is None)")
@@ -246,9 +250,10 @@ if __name__ == "__main__":
                 turtlebot.teleport(START_POS, [0, 0, 0, 1])  # identity quaternion
                 p.stepSimulation()
                 turtlebot.set_velocities(0, 0)
+                log_id = p.startStateLogging(p.STATE_LOGGING_VIDEO_MP4, "./search.mp4")
                                 
                 replay = replay_path(turtlebot, action_path)
-            p.stopStateLogging(log_id)
+                p.stopStateLogging(log_id)
             # p.stepSimulation()
         # Some example code below to get familiar with the simulation loop
 
