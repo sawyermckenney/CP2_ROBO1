@@ -23,7 +23,7 @@ WHEEL_MAX =  12.0
 def get_rrt_path(bot: Turtlebot, tree: Tree, arena):
     ARENA_XMIN, ARENA_XMAX, ARENA_YMIN, ARENA_YMAX = arena
     root_id = tree.add_node(bot.get_position(), bot.get_orientation(),
-                            parent=None, action=None, steps=None) #initialize tree root as bot's position at start - need to update action after first sim run
+                            parent=None, action=None, steps=None, trajectory=None) #initialize tree root as bot's position at start - need to update action after first sim run
 
     for _ in range(RRT_CAP):  # overall RRT iterations cap 
         # sample node  generation
@@ -52,15 +52,17 @@ def do_rollout(bot: Turtlebot, start_pos, start_orn, action, steps):
 
     lw, rw = action
     bot.set_velocities(lw, rw)
-
-    for _ in range(steps):
+    trajectory = [list(start_pos)]
+    for i in range(steps):
         p.stepSimulation()
+        if i % 10 == 0: # This gives a balance between resolution and performance 
+            trajectory.append(list(bot.get_position()))
         if bot.collision_check():
             bot.set_velocities(0, 0)
             return None
 
     bot.set_velocities(0, 0)
-    return (bot.get_position(), bot.get_orientation())
+    return (bot.get_position(), bot.get_orientation(), trajectory)
 
     
 #calls do_rollout until we have 5 valid paths. If we make it to MAX_ITERS without 5 paths, assume the sample is bad (i.e. we are driving into a wall) and return None
@@ -82,20 +84,23 @@ def monte_iter(bot:Turtlebot, tree:Tree, sample):
         if end is None:
             continue
 
-        end_pos, end_orn = end
-        candidates.append((end_pos, end_orn, action, steps))
+        end_pos, end_orn, trajectory = end
+        candidates.append((end_pos, end_orn, action, steps, trajectory))
 
     if len(candidates) < 5:
         return None
 
     # choose endpoint closest to sample S
     best = min(candidates, key=lambda c: math.dist((c[0][0], c[0][1]), sample))
-    end_pos, end_orn, action, steps = best
+    end_pos, end_orn, action, steps, trajectory = best
+
 
     # add to tree
-    new_id = tree.add_node(end_pos, end_orn, parent=closest_id, action=action, steps=steps)
-    end_pos, end_orn, action, steps = best
+    new_id = tree.add_node(end_pos, end_orn, parent=closest_id, action=action, steps=steps, trajectory=trajectory)
+    end_pos, end_orn, action, steps, trajectory = best
     bot.teleport(end_pos, end_orn)
     p.stepSimulation()
+    # if sample != (GOAL[0], GOAL[1]):
+    #     bot.show_intermediate_goal([sample[0], sample[1], 0])
     return new_id
 

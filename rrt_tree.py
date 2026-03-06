@@ -1,20 +1,22 @@
 import math
 
 class Node:
-    def __init__(self, pos, orn, parent_id, action, steps):
+    def __init__(self, pos, orn, parent_id, action, steps, trajectory):
         self.pos = pos
         self.orn = orn
         self.parent_id = parent_id
         self.action = action
         self.steps = steps
+        self.trajectory = trajectory
+
 
 class Tree:
     def __init__(self):
         self.nodes = []
     
-    def add_node(self, pos, orn, parent, action, steps):
+    def add_node(self, pos, orn, parent, action, steps, trajectory):
         # Add new node to tree and return its id
-        node = Node(pos, orn, parent, action, steps)
+        node = Node(pos, orn, parent, action, steps, trajectory)
         self.nodes.append(node)
         return len(self.nodes) - 1
     
