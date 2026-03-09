@@ -45,9 +45,12 @@ class Tree:
         while current_id is not None:
             node = self.nodes[current_id]
             path.append((node.pos, node.orn))
+            # print(f"Added node: {current_id}\tAt pos/orn: {node.pos}/{node.orn}")
             current_id = node.parent_id
         
         path.reverse()
+        # for node in path:
+        #     print(f"Node: {node}")
         return path
     
     def get_action_path(self, node_id):
@@ -62,4 +65,15 @@ class Tree:
             current_id = node.parent_id
         
         actions.reverse()
+        
         return actions
+    
+    #backtracks, but returns list of node_id in path
+    def backtrack_node_ids(self, node_id):
+        ids = []
+        current_id = node_id
+        while current_id is not None:
+            ids.append(current_id)
+            current_id = self.nodes[current_id].parent_id
+        ids.reverse()
+        return ids
