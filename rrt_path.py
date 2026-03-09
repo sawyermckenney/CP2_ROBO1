@@ -5,17 +5,17 @@ import pybullet as p
 import math
 import random
 
-MAX_ITERS = 50 #number of tries for each monte carlo run
+MAX_ITERS = 20 #number of tries for each monte carlo run
 GOAL_BIAS = 0.5 #50%
 RRT_CAP = 3000 #maximum number of montecarlo runs
 
 #action duration bounds - tune as needed. 240 samples/sec
-STEP_MIN = 5 
-STEP_MAX = 120 
+STEP_MIN = 240 #5 
+STEP_MAX = 480 #120 
 
 #TODO: Should we allow negatives?
 WHEEL_MIN = -3.0
-WHEEL_MAX =  12.0
+WHEEL_MAX =  6.0
 
 
 
@@ -47,7 +47,9 @@ def get_rrt_path(bot: Turtlebot, tree: Tree, arena):
 
 #gets ONE path
 def do_rollout(bot: Turtlebot, start_pos, start_orn, action, steps):
+    bot.set_velocities(0, 0)
     bot.teleport(start_pos, start_orn)
+    p.resetBaseVelocity(bot.turtleId, [0, 0, 0], [0, 0, 0])
     p.stepSimulation()
 
     lw, rw = action
@@ -66,6 +68,7 @@ def do_rollout(bot: Turtlebot, start_pos, start_orn, action, steps):
 
     
 #calls do_rollout until we have 5 valid paths. If we make it to MAX_ITERS without 5 paths, assume the sample is bad (i.e. we are driving into a wall) and return None
+#adds all nodes to tree if we have 5 valid samples from monte iteration
 def monte_iter(bot:Turtlebot, tree:Tree, sample):
     closest_id = tree.nearest(sample)          
     closest = tree.get_node(closest_id)       
@@ -89,18 +92,32 @@ def monte_iter(bot:Turtlebot, tree:Tree, sample):
 
     if len(candidates) < 5:
         return None
+    
+    new_ids = []
+    for end_pos, end_orn, action, steps, trajectory in candidates:
+        new_id = tree.add_node(
+            end_pos,
+            end_orn,
+            parent=closest_id,
+            action=action,
+            steps=steps,
+            trajectory=trajectory,
+        )
+        new_ids.append(new_id)
 
-    # choose endpoint closest to sample S
-    best = min(candidates, key=lambda c: math.dist((c[0][0], c[0][1]), sample))
-    end_pos, end_orn, action, steps, trajectory = best
+    best_idx = min(
+        range(len(candidates)),
+        key=lambda i: math.dist((candidates[i][0][0], candidates[i][0][1]), sample),
+    )
+    best_id = new_ids[best_idx]
+    best_node = tree.get_node(best_id)
 
-
-    # add to tree
-    new_id = tree.add_node(end_pos, end_orn, parent=closest_id, action=action, steps=steps, trajectory=trajectory)
-    end_pos, end_orn, action, steps, trajectory = best
-    bot.teleport(end_pos, end_orn)
+    bot.teleport(best_node.pos, best_node.orn)
     p.stepSimulation()
-    # if sample != (GOAL[0], GOAL[1]):
-    #     bot.show_intermediate_goal([sample[0], sample[1], 0])
-    return new_id
+
+    if sample != (GOAL[0], GOAL[1]):
+        bot.show_intermediate_goal([sample[0], sample[1], 0])
+
+    return best_id
+
 
