@@ -2,6 +2,7 @@ import pybullet as p
 import pybullet_data
 import random
 from typing import List
+from rrt_tree import Tree
 
 random.seed(1)
 
@@ -105,6 +106,7 @@ class Turtlebot():
         Outputs: None
         """
         p.resetBasePositionAndOrientation(self.turtleId, pos, orn)
+        
 
     def set_velocities(self, leftWheelVelocity, rightWheelVelocity):
         """
@@ -188,17 +190,32 @@ class RobotPosition:
         return self.orientation
 
 #replays the path - not trace like backtrack_path, but actually moves the bot along the "final" path
-def replay_path(bot: Turtlebot, action_path):
-    for (action, steps) in action_path:
+def replay_path(bot: Turtlebot, tree: Tree, node_ids):
+    for child_id in node_ids[1:]:
+        child = tree.get_node(child_id)
+        parent = tree.get_node(child.parent_id)
+
+        bot.set_velocities(0, 0)
+        bot.teleport(parent.pos, parent.orn)
+        p.resetBaseVelocity(bot.turtleId, [0, 0, 0], [0, 0, 0])
+        p.stepSimulation()
+
+        action = child.action
         lw, rw = action
         bot.set_velocities(lw, rw)
-        for _ in range(steps):
-            p.stepSimulation()
-            if bot.collision_check():
-                bot.set_velocities(0, 0)
-                return False
+
+        # steps = child.steps
+        # for i in range(steps):
+        #     p.stepSimulation()
+        #     if bot.collision_check():
+        #         bot.set_velocities(0, 0)
+        #         print(f"Error during replay. Collision detected at node {child_id}, sim step {i}\n\tAction: {action}\n\tLocation/Orientation: {bot.get_position()}/{bot.get_orientation()}")
+        #         return False
+
         bot.set_velocities(0, 0)
+
     return True
+
 
 if __name__ == "__main__":
     from rrt_path import get_rrt_path
@@ -214,9 +231,9 @@ if __name__ == "__main__":
     start_postion = turtlebot.get_position()
     srart_orientation = turtlebot.get_orientation()
     robot_state=RobotPosition(start_postion, srart_orientation)
-    print("initial position: ", robot_state.get_position())
-    print("initial orientation: ", robot_state.get_orientation())
-    print('starting at {}'.format(turtlebot.get_position()))
+    # print("initial position: ", robot_state.get_position())
+    # print("initial orientation: ", robot_state.get_orientation())
+    # print('starting at {}'.format(turtlebot.get_position()))
     # Turn off real-time simulation for manual step control
     p.setRealTimeSimulation(0)
 
@@ -245,16 +262,31 @@ if __name__ == "__main__":
                 pts = [list(pos) for (pos, orn) in path]
                 turtlebot.plot_path("green", pts)
                 
-                action_path = tree.get_action_path(goal_node)
+                # action_path = tree.get_action_path(goal_node)
+                
+                node_ids = tree.backtrack_node_ids(goal_node)
+                # print("solution node ids:", node_ids)
+                #reset bot to start pos/orn
                 turtlebot.set_velocities(0, 0)
-                turtlebot.teleport(START_POS, [0, 0, 0, 1])  # identity quaternion
+                root = tree.get_node(0)
+                turtlebot.teleport(root.pos, root.orn)
                 p.stepSimulation()
                 turtlebot.set_velocities(0, 0)
                 log_id = p.startStateLogging(p.STATE_LOGGING_VIDEO_MP4, "./search.mp4")
+                
+                node_ids = tree.backtrack_node_ids(goal_node)
+                replay = replay_path(turtlebot, tree, node_ids)
+                # replay_ok, bad_node_id = replay_node_path(turtlebot, tree, node_ids)
                                 
-                replay = replay_path(turtlebot, action_path)
+                # replay = replay_path(turtlebot, action_path)
                 p.stopStateLogging(log_id)
-            # p.stepSimulation()
+                # if not replay_ok and bad_node_id is not None:
+                #     validate_single_edge(turtlebot, tree, bad_node_id)
+                    
+                # replay_ok, bad_node_id = replay_node_path_hard_reset(turtlebot, tree, node_ids)
+                # if not replay_ok and bad_node_id is not None:
+                    # validate_single_edge(turtlebot, tree, bad_node_id)
+                # p.stepSimulation()
         # Some example code below to get familiar with the simulation loop
 
         # set turtlebot to move forward
