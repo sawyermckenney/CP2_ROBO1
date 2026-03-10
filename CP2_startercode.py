@@ -204,13 +204,13 @@ def replay_path(bot: Turtlebot, tree: Tree, node_ids):
         lw, rw = action
         bot.set_velocities(lw, rw)
 
-        # steps = child.steps
-        # for i in range(steps):
-        #     p.stepSimulation()
-        #     if bot.collision_check():
-        #         bot.set_velocities(0, 0)
-        #         print(f"Error during replay. Collision detected at node {child_id}, sim step {i}\n\tAction: {action}\n\tLocation/Orientation: {bot.get_position()}/{bot.get_orientation()}")
-        #         return False
+        steps = child.steps
+        for i in range(steps):
+            p.stepSimulation()
+            if bot.collision_check():
+                bot.set_velocities(0, 0)
+                print(f"Error during replay. Collision detected at node {child_id}, sim step {i}\n\tAction: {action}\n\tLocation/Orientation: {bot.get_position()}/{bot.get_orientation()}")
+                return False
 
         bot.set_velocities(0, 0)
 
@@ -238,7 +238,7 @@ if __name__ == "__main__":
     p.setRealTimeSimulation(0)
 
     # Start recording video 
-    #log_id = p.startStateLogging(p.STATE_LOGGING_VIDEO_MP4, "./search.mp4")
+    log_id = p.startStateLogging(p.STATE_LOGGING_VIDEO_MP4, "./search.mp4")
     
     ran = False
     path = None
@@ -272,7 +272,7 @@ if __name__ == "__main__":
                 turtlebot.teleport(root.pos, root.orn)
                 p.stepSimulation()
                 turtlebot.set_velocities(0, 0)
-                log_id = p.startStateLogging(p.STATE_LOGGING_VIDEO_MP4, "./search.mp4")
+                #log_id = p.startStateLogging(p.STATE_LOGGING_VIDEO_MP4, "./search.mp4")
                 
                 node_ids = tree.backtrack_node_ids(goal_node)
                 replay = replay_path(turtlebot, tree, node_ids)
